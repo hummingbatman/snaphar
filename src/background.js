@@ -133,6 +133,7 @@ function getStatus() {
     active: !capture.interrupted,
     interrupted: !!capture.interrupted,
     error: capture.error || null,
+    warning: capture.warning || null,
     requestCount: collector ? collector.requestCount : 0,
     elapsedMs: Date.now() - capture.startedAt,
     tabId: capture.tabId,
@@ -160,12 +161,18 @@ async function startCapture() {
   const settings = await getSettings();
   const target = { tabId: tab.id };
 
+  // Detect DevTools / another debugger *before* we attach (afterwards the tab
+  // target reports attached:true because of our own session). Modern Chromium
+  // allows multiple debugger clients per tab, so this is a warning, not a block.
+  const sharedWithOther = await isTabBeingDebugged(tab.id);
+
   try {
     await chrome.debugger.attach(target, CDP_VERSION);
   } catch (err) {
     const msg = String(err && err.message ? err.message : err);
-    if (/already attached/i.test(msg)) {
-      return { error: 'Another debugger is attached (is DevTools open on this tab?). Close it and retry.' };
+    if (/already attached|another debugger/i.test(msg)) {
+      // Genuine exclusive conflict (typically another extension holding the tab).
+      return { error: 'Another extension is debugging this tab. Close it and retry.' };
     }
     return { error: `Could not attach debugger: ${msg}` };
   }
@@ -186,6 +193,9 @@ async function startCapture() {
     active: true,
     interrupted: false,
     error: null,
+    warning: sharedWithOther
+      ? 'DevTools (or another debugger) is open on this tab. Recording still works; in rare cases a response body may be missing.'
+      : null,
     tabId: tab.id,
     startedAt: Date.now(),
     settings,
@@ -355,6 +365,16 @@ function onDownloadChanged(delta) {
 }
 
 /* ------------------------------------------------------------------ utils */
+
+/** True if a debugger (DevTools or another extension) is attached to the tab. */
+async function isTabBeingDebugged(tabId) {
+  try {
+    const targets = await chrome.debugger.getTargets();
+    return targets.some((t) => t.tabId === tabId && t.type === 'page' && t.attached);
+  } catch {
+    return false;
+  }
+}
 
 function sendCommand(target, method, params) {
   return chrome.debugger.sendCommand(target, method, params);

@@ -12,6 +12,7 @@ const els = {
   elapsed: document.getElementById('elapsed'),
   count: document.getElementById('count'),
   target: document.getElementById('target'),
+  notice: document.getElementById('notice'),
   error: document.getElementById('error'),
   start: document.getElementById('start'),
   stop: document.getElementById('stop'),
@@ -36,6 +37,9 @@ function formatElapsed(ms) {
 function render(status) {
   els.error.hidden = !status.error;
   if (status.error) els.error.textContent = status.error;
+
+  els.notice.hidden = !status.warning;
+  if (status.warning) els.notice.textContent = status.warning;
 
   if (status.active) {
     setMode('recording', 'Recording…');

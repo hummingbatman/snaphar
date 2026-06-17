@@ -110,6 +110,18 @@ body {
   font-size: 12px;
 }
 
+.notice {
+  background: rgba(214, 143, 0, 0.14);
+  color: #9a6700;
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin: 0 0 12px;
+  font-size: 12px;
+}
+@media (prefers-color-scheme: dark) {
+  .notice { color: #e8b339; }
+}
+
 .actions { display: flex; flex-direction: column; gap: 8px; }
 
 .btn {
