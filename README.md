@@ -1,6 +1,6 @@
 # SnapHAR
 
-**One-click HAR capture for Microsoft Edge (and Chromium).** Record a page's
+**One-click HAR capture for Chromium browsers — Edge, Chrome, Brave, and more.** Record a page's
 network traffic and export a spec-compliant **HAR 1.2** file — without ever
 opening DevTools.
 
@@ -71,12 +71,13 @@ contain secrets — strip or cap them before sharing.
 
 ## Known behaviors & limitations
 
-- **Debugger banner.** While recording, Edge shows a *"SnapHAR started debugging
-  this browser"* banner. This is unavoidable with the `chrome.debugger` API and
-  disappears when you stop. Clicking **Cancel** on the banner detaches the
+- **Debugger banner.** While recording, your browser shows a *"SnapHAR started
+  debugging this browser"* banner. This is unavoidable with the `chrome.debugger`
+  API and disappears when you stop. Clicking **Cancel** on the banner detaches the
   debugger — SnapHAR detects this and lets you **export what was captured**.
-- **One debugger per tab.** If DevTools is already open on the tab, attach fails;
-  the popup explains how to resolve it.
+- **Recording alongside DevTools.** Modern Chromium allows multiple debugger
+  clients per tab, so you can record even with DevTools open. SnapHAR shows a
+  non-blocking notice in that case (a response body may occasionally be missing).
 - **Browser-internal pages** (`edge://`, `chrome://`, `view-source:`, …) can't be
   recorded.
 - **Sensitive data.** Captured HARs can contain auth tokens, cookies, and response

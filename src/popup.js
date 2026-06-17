@@ -69,7 +69,7 @@ function render(status) {
     toggle(els.stop, false);
     toggle(els.discard, false);
     els.stop.textContent = 'Stop & Export';
-    els.hint.textContent = 'Edge will show a “debugging” banner while recording.';
+    els.hint.textContent = 'Your browser will show a “debugging” banner while recording.';
   }
 }
 

@@ -244,11 +244,13 @@ async function exportHar() {
     return { error: 'No network requests were captured.' };
   }
 
+  const browser = detectBrowser();
   const har = buildHar(collected, {
     redactHeaders: settings.redactHeaders,
     redactQuery: settings.redactQuery,
     redactBodies: settings.redactBodies,
-    browser: 'Microsoft Edge',
+    browser: browser.name,
+    browserVersion: browser.version,
   });
   const json = JSON.stringify(har, null, 2);
 
@@ -367,6 +369,17 @@ function onDownloadChanged(delta) {
 }
 
 /* ------------------------------------------------------------------ utils */
+
+/** Identify the host Chromium browser for the HAR `log.browser` field. */
+function detectBrowser() {
+  const ua = (self.navigator && self.navigator.userAgent) || '';
+  let m;
+  if ((m = ua.match(/Edg(?:A|iOS)?\/([\d.]+)/))) return { name: 'Microsoft Edge', version: m[1] };
+  if ((m = ua.match(/OPR\/([\d.]+)/))) return { name: 'Opera', version: m[1] };
+  if ((m = ua.match(/Brave\/([\d.]+)/))) return { name: 'Brave', version: m[1] };
+  if ((m = ua.match(/Chrome\/([\d.]+)/))) return { name: 'Google Chrome', version: m[1] };
+  return { name: 'Chromium', version: '' };
+}
 
 /** True if a debugger (DevTools or another extension) is attached to the tab. */
 async function isTabBeingDebugged(tabId) {

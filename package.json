@@ -1,7 +1,7 @@
 {
   "name": "snaphar",
   "version": "0.1.0",
-  "description": "One-click HAR capture for Microsoft Edge / Chromium — record network traffic without opening DevTools.",
+  "description": "One-click HAR capture for Chromium browsers (Edge, Chrome, Brave, ...) — record network traffic without opening DevTools.",
   "private": true,
   "type": "module",
   "scripts": {
@@ -13,6 +13,7 @@
   "keywords": [
     "har",
     "edge",
+    "chrome",
     "chromium",
     "extension",
     "devtools",
