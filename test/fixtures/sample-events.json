@@ -1,0 +1,165 @@
+{
+  "description": "Recorded CDP Network/Page event stream: a top-level navigation, one HTML document request with full timing/cookies/body, and one 301 redirect chain.",
+  "bodies": {
+    "1": { "body": "<!doctype html><title>Example</title>", "base64Encoded": false }
+  },
+  "events": [
+    {
+      "method": "Page.frameNavigated",
+      "params": { "frame": { "id": "FRAME1", "url": "https://example.com/", "loaderId": "L1" } }
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "params": {
+        "requestId": "1",
+        "loaderId": "L1",
+        "frameId": "FRAME1",
+        "type": "Document",
+        "timestamp": 1000.0,
+        "wallTime": 1700000000.0,
+        "request": {
+          "url": "https://example.com/",
+          "method": "GET",
+          "headers": { "Host": "example.com", "Cookie": "a=1; b=2", "User-Agent": "SnapHARTest" },
+          "initialPriority": "VeryHigh"
+        }
+      }
+    },
+    {
+      "method": "Network.responseReceived",
+      "params": {
+        "requestId": "1",
+        "loaderId": "L1",
+        "type": "Document",
+        "timestamp": 1000.05,
+        "response": {
+          "url": "https://example.com/",
+          "status": 200,
+          "statusText": "OK",
+          "mimeType": "text/html",
+          "protocol": "h2",
+          "remoteIPAddress": "93.184.216.34",
+          "connectionId": 5,
+          "encodedDataLength": 0,
+          "headers": {
+            "Content-Type": "text/html; charset=utf-8",
+            "Set-Cookie": "sid=xyz; Path=/; HttpOnly; Secure",
+            "Content-Length": "37"
+          },
+          "headersText": "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\n\r\n",
+          "timing": {
+            "requestTime": 1000.0,
+            "proxyStart": -1,
+            "proxyEnd": -1,
+            "dnsStart": 0.5,
+            "dnsEnd": 2.0,
+            "connectStart": 2.0,
+            "connectEnd": 10.0,
+            "sslStart": 4.0,
+            "sslEnd": 9.5,
+            "sendStart": 10.5,
+            "sendEnd": 11.0,
+            "pushStart": 0,
+            "pushEnd": 0,
+            "receiveHeadersStart": 11.0,
+            "receiveHeadersEnd": 50.0
+          }
+        }
+      }
+    },
+    {
+      "method": "Network.dataReceived",
+      "params": { "requestId": "1", "timestamp": 1000.06, "dataLength": 37, "encodedDataLength": 800 }
+    },
+    {
+      "method": "Page.domContentEventFired",
+      "params": { "timestamp": 1000.06 }
+    },
+    {
+      "method": "Network.loadingFinished",
+      "params": { "requestId": "1", "timestamp": 1000.08, "encodedDataLength": 800 }
+    },
+    {
+      "method": "Page.loadEventFired",
+      "params": { "timestamp": 1000.1 }
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "params": {
+        "requestId": "2",
+        "loaderId": "L2",
+        "frameId": "FRAME1",
+        "type": "XHR",
+        "timestamp": 1000.2,
+        "wallTime": 1700000000.2,
+        "request": {
+          "url": "https://example.com/old",
+          "method": "GET",
+          "headers": { "Host": "example.com" },
+          "initialPriority": "High"
+        }
+      }
+    },
+    {
+      "method": "Network.requestWillBeSent",
+      "params": {
+        "requestId": "2",
+        "loaderId": "L2",
+        "frameId": "FRAME1",
+        "type": "XHR",
+        "timestamp": 1000.25,
+        "wallTime": 1700000000.25,
+        "request": {
+          "url": "https://example.com/new",
+          "method": "GET",
+          "headers": { "Host": "example.com" },
+          "initialPriority": "High"
+        },
+        "redirectResponse": {
+          "url": "https://example.com/old",
+          "status": 301,
+          "statusText": "Moved Permanently",
+          "mimeType": "text/plain",
+          "protocol": "http/1.1",
+          "encodedDataLength": 120,
+          "headers": { "Location": "https://example.com/new", "Content-Length": "0" }
+        }
+      }
+    },
+    {
+      "method": "Network.responseReceived",
+      "params": {
+        "requestId": "2",
+        "loaderId": "L2",
+        "type": "XHR",
+        "timestamp": 1000.3,
+        "response": {
+          "url": "https://example.com/new",
+          "status": 200,
+          "statusText": "OK",
+          "mimeType": "application/json",
+          "protocol": "http/1.1",
+          "encodedDataLength": 0,
+          "headers": { "Content-Type": "application/json" },
+          "timing": {
+            "requestTime": 1000.25,
+            "dnsStart": -1,
+            "dnsEnd": -1,
+            "connectStart": -1,
+            "connectEnd": -1,
+            "sslStart": -1,
+            "sslEnd": -1,
+            "sendStart": 0.2,
+            "sendEnd": 0.4,
+            "receiveHeadersStart": 0.4,
+            "receiveHeadersEnd": 20.0
+          }
+        }
+      }
+    },
+    {
+      "method": "Network.loadingFinished",
+      "params": { "requestId": "2", "timestamp": 1000.3, "encodedDataLength": 256 }
+    }
+  ]
+}

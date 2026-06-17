@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SnapHAR</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="header">
+      <img src="../icons/icon32.png" alt="" class="logo" width="20" height="20" />
+      <h1>SnapHAR</h1>
+      <button id="settings" class="icon-btn" title="Settings" aria-label="Settings">⚙</button>
+    </header>
+
+    <main class="main">
+      <div id="status" class="status status--idle">
+        <span class="dot"></span>
+        <span id="status-text">Ready to record</span>
+      </div>
+
+      <dl class="stats" id="stats" hidden>
+        <div><dt>Elapsed</dt><dd id="elapsed">0:00</dd></div>
+        <div><dt>Requests</dt><dd id="count">0</dd></div>
+      </dl>
+
+      <p id="target" class="target" hidden></p>
+      <p id="error" class="error" role="alert" hidden></p>
+
+      <div class="actions">
+        <button id="start" class="btn btn--primary">Start Recording</button>
+        <button id="stop" class="btn btn--danger" hidden>Stop &amp; Export</button>
+        <button id="discard" class="btn btn--ghost" hidden>Discard</button>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <span id="hint">Edge will show a “debugging” banner while recording.</span>
+    </footer>
+
+    <script src="popup.js" type="module"></script>
+  </body>
+</html>

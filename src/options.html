@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SnapHAR — Settings</title>
+    <style>
+      body {
+        font: 14px/1.5 system-ui, "Segoe UI", Roboto, sans-serif;
+        color: #1b1b1f;
+        max-width: 640px;
+        margin: 0 auto;
+        padding: 32px 24px 64px;
+      }
+      h1 { font-size: 20px; }
+      fieldset { border: 1px solid #e3e3e8; border-radius: 10px; margin: 0 0 20px; padding: 16px 18px; }
+      legend { font-weight: 600; padding: 0 6px; }
+      .row { margin: 12px 0; }
+      label.block { display: block; font-weight: 600; margin-bottom: 4px; }
+      .hint { color: #6b6b76; font-size: 12px; margin: 2px 0 0; }
+      input[type="text"], input[type="number"] {
+        width: 100%; padding: 8px 10px; border: 1px solid #cfcfd6; border-radius: 8px; font: inherit;
+      }
+      input[type="number"] { width: 160px; }
+      .check { display: flex; align-items: flex-start; gap: 10px; }
+      .check input { margin-top: 3px; }
+      .actions { display: flex; align-items: center; gap: 12px; }
+      button {
+        background: #0f6cbd; color: #fff; border: none; border-radius: 8px;
+        padding: 10px 18px; font: inherit; font-weight: 600; cursor: pointer;
+      }
+      #saved { color: #2e7d32; font-weight: 600; opacity: 0; transition: opacity .2s; }
+      #saved.show { opacity: 1; }
+      code { background: #f1f1f4; padding: 1px 5px; border-radius: 4px; }
+      @media (prefers-color-scheme: dark) {
+        body { color: #f3f3f5; background: #1f1f24; }
+        fieldset { border-color: #34343c; }
+        input[type="text"], input[type="number"] { background: #2a2a31; color: #f3f3f5; border-color: #44444d; }
+        code { background: #34343c; }
+        .hint { color: #a0a0ad; }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>SnapHAR settings</h1>
+
+    <fieldset>
+      <legend>Response bodies</legend>
+      <div class="row check">
+        <input type="checkbox" id="includeBodies" />
+        <div>
+          <label class="block" for="includeBodies">Include response bodies</label>
+          <p class="hint">Captures the actual response content. Disable for smaller, less sensitive HARs.</p>
+        </div>
+      </div>
+      <div class="row">
+        <label class="block" for="maxBodySize">Max body size per response (KB)</label>
+        <input type="number" id="maxBodySize" min="0" step="64" />
+        <p class="hint">Responses larger than this keep their metadata but skip the body.</p>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Privacy</legend>
+      <div class="row check">
+        <input type="checkbox" id="redactHeaders" />
+        <div>
+          <label class="block" for="redactHeaders">Redact sensitive headers &amp; cookies</label>
+          <p class="hint">Replaces <code>Authorization</code>, <code>Cookie</code>, and <code>Set-Cookie</code> values.</p>
+        </div>
+      </div>
+      <div class="row check">
+        <input type="checkbox" id="redactBodies" />
+        <div>
+          <label class="block" for="redactBodies">Strip response body text</label>
+          <p class="hint">Keeps sizes and timings but removes captured body content.</p>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Output</legend>
+      <div class="row">
+        <label class="block" for="filenamePattern">Filename pattern</label>
+        <input type="text" id="filenamePattern" />
+        <p class="hint">Tokens: <code>{host}</code> <code>{title}</code> <code>{date}</code> <code>{time}</code> <code>{datetime}</code> <code>{ts}</code></p>
+      </div>
+    </fieldset>
+
+    <div class="actions">
+      <button id="save">Save settings</button>
+      <button id="reset" style="background:#6b6b76">Reset to defaults</button>
+      <span id="saved">Saved ✓</span>
+    </div>
+
+    <script src="options.js" type="module"></script>
+  </body>
+</html>

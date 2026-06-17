@@ -1,0 +1,27 @@
+{
+  "name": "snaphar",
+  "version": "0.1.0",
+  "description": "One-click HAR capture for Microsoft Edge / Chromium — record network traffic without opening DevTools.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "lint": "node --check src/background.js && node --check src/har.js && node --check src/cdp-collector.js && node --check src/popup.js && node --check src/options.js && node --check src/offscreen.js && node --check src/download.js",
+    "icons": "node scripts/make-icons.mjs",
+    "package": "node scripts/package.js"
+  },
+  "keywords": [
+    "har",
+    "edge",
+    "chromium",
+    "extension",
+    "devtools",
+    "network",
+    "cdp",
+    "debugger"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  }
+}
