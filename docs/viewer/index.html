@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SnapHAR — HAR viewer</title>
+    <meta name="description" content="Open and inspect a HAR file in your browser. Waterfall, headers, timings, and bodies — parsed locally, nothing uploaded." />
+    <meta name="theme-color" content="#0a0a0a" />
+    <link rel="icon" href="../icon.svg" type="image/svg+xml" />
+    <link rel="alternate icon" href="../icon128.png" />
+
+    <style>
+      :root {
+        --ink: #0a0a0a; --paper: #ffffff; --gray: #6c6c6c; --line: #e3e3e3;
+        --soft: #f6f7f8;
+        --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+        --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root { --ink: #f4f4f4; --paper: #0a0a0a; --gray: #9a9a9a; --line: #242424; --soft: #151515; }
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--paper); color: var(--ink); font-family: var(--sans); -webkit-font-smoothing: antialiased; }
+      a { color: inherit; }
+      .frame { max-width: 1180px; margin: 0 auto; border-left: 1px solid var(--line); border-right: 1px solid var(--line); min-height: 100vh; display: flex; flex-direction: column; }
+
+      .bar { display: flex; align-items: center; gap: 14px; height: 60px; padding: 0 28px; border-bottom: 1px solid var(--line); }
+      .bar .mark { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 16px; letter-spacing: -0.01em; }
+      .bar .mark svg { width: 22px; height: 22px; }
+      .bar nav { margin-left: auto; display: flex; gap: 24px; font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; }
+      .bar nav a { color: var(--gray); text-decoration: none; }
+      .bar nav a:hover { color: var(--ink); }
+
+      /* Dropzone */
+      .drop { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 60px 28px; }
+      .drop .zone { border: 1.5px dashed var(--line); border-radius: 12px; padding: 56px 40px; width: 100%; max-width: 560px; transition: border-color .15s, background .15s; }
+      .drop.drag .zone { border-color: var(--ink); background: var(--soft); }
+      .drop h1 { font-size: 24px; letter-spacing: -0.02em; margin: 0 0 8px; }
+      .drop p { color: var(--gray); margin: 0 0 22px; font-size: 14.5px; }
+      .browse { display: inline-block; font-family: var(--mono); font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; border: 1px solid var(--ink); padding: 11px 20px; cursor: pointer; }
+      .browse:hover { background: var(--ink); color: var(--paper); }
+      .privacy-note { font-family: var(--mono); font-size: 11.5px; color: var(--gray); margin-top: 26px; }
+      .sample { margin-top: 14px; font-size: 13px; }
+      .sample a { color: var(--gray); }
+      .err { color: #b00020; font-family: var(--mono); font-size: 13px; margin-top: 18px; min-height: 18px; }
+      @media (prefers-color-scheme: dark) { .err { color: #ff6b6b; } }
+
+      /* App */
+      #app { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+      .summary { display: flex; flex-wrap: wrap; gap: 22px; padding: 14px 28px; border-bottom: 1px solid var(--line); font-size: 13px; }
+      .summary b { font-variant-numeric: tabular-nums; }
+      .summary .k { color: var(--gray); font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; margin-right: 7px; }
+
+      .toolbar { display: flex; align-items: center; gap: 12px; padding: 12px 28px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+      .toolbar input[type=search] { font: 13px var(--sans); padding: 8px 12px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); border-radius: 7px; width: 240px; }
+      .filters { display: flex; gap: 6px; flex-wrap: wrap; }
+      .filters button { font-family: var(--mono); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.04em; padding: 6px 11px; border: 1px solid var(--line); background: transparent; color: var(--gray); cursor: pointer; border-radius: 6px; }
+      .filters button.on { border-color: var(--ink); color: var(--ink); }
+      .toolbar .right { margin-left: auto; }
+      .linklike { font-family: var(--mono); font-size: 12px; color: var(--gray); background: none; border: none; cursor: pointer; text-transform: uppercase; letter-spacing: 0.04em; }
+      .linklike:hover { color: var(--ink); }
+
+      .split { flex: 1; display: grid; grid-template-columns: 1fr 0; min-height: 0; }
+      .split.open { grid-template-columns: 1fr 420px; }
+      .tablewrap { overflow: auto; min-height: 0; }
+      table { width: 100%; border-collapse: collapse; font-size: 13px; }
+      thead th { position: sticky; top: 0; background: var(--paper); text-align: left; font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--gray); font-weight: 500; padding: 9px 12px; border-bottom: 1px solid var(--line); cursor: pointer; white-space: nowrap; }
+      tbody td { padding: 8px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+      tbody tr { cursor: pointer; }
+      tbody tr:hover { background: var(--soft); }
+      tbody tr.sel { background: var(--soft); }
+      .c-name { max-width: 320px; overflow: hidden; text-overflow: ellipsis; }
+      .c-num { font-family: var(--mono); text-align: right; font-variant-numeric: tabular-nums; color: var(--gray); }
+      .c-status { font-family: var(--mono); }
+      .c-status.err { font-weight: 700; }
+      .c-type { font-family: var(--mono); font-size: 11.5px; color: var(--gray); text-transform: uppercase; }
+      .c-wf { width: 30%; min-width: 160px; }
+      .track { position: relative; height: 10px; }
+      .track .bar { position: absolute; top: 0; height: 10px; display: flex; min-width: 1px; }
+      .track .bar i { display: block; height: 100%; background: var(--ink); }
+      .track .bar i.p1 { opacity: 0.25; }
+      .track .bar i.p2 { opacity: 0.5; }
+      .track .bar i.p3 { opacity: 1; }
+
+      /* Detail */
+      .detail { border-left: 1px solid var(--line); overflow: auto; min-height: 0; }
+      .split:not(.open) .detail { display: none; }
+      .detail .dhead { display: flex; align-items: flex-start; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+      .detail .dhead .u { font-family: var(--mono); font-size: 12px; word-break: break-all; line-height: 1.5; }
+      .detail .dhead .x { margin-left: auto; background: none; border: none; font-size: 18px; cursor: pointer; color: var(--gray); line-height: 1; }
+      .sec { border-bottom: 1px solid var(--line); padding: 12px 16px; }
+      .sec h3 { font-family: var(--mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--gray); margin: 0 0 10px; font-weight: 600; }
+      .kv { display: grid; grid-template-columns: 38% 1fr; gap: 4px 12px; font-size: 12.5px; }
+      .kv dt { color: var(--gray); font-family: var(--mono); word-break: break-word; }
+      .kv dd { margin: 0; word-break: break-word; font-family: var(--mono); }
+      .timings { font-family: var(--mono); font-size: 12px; }
+      .timings .row { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+      .timings .row .lbl { width: 70px; color: var(--gray); }
+      .timings .row .meter { flex: 1; height: 8px; position: relative; background: var(--soft); }
+      .timings .row .meter i { position: absolute; height: 8px; background: var(--ink); opacity: 0.8; }
+      .timings .row .val { width: 64px; text-align: right; color: var(--gray); }
+      pre.body { margin: 0; font-family: var(--mono); font-size: 11.5px; line-height: 1.55; white-space: pre-wrap; word-break: break-word; max-height: 260px; overflow: auto; background: var(--soft); padding: 10px 12px; border-radius: 6px; }
+
+      @media (max-width: 760px) {
+        .split.open { grid-template-columns: 1fr; }
+        .split.open .tablewrap { display: none; }
+        .c-wf, .c-type { display: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <symbol id="mark" viewBox="0 0 128 128">
+        <rect x="12" y="34" width="92" height="16" rx="8" fill="currentColor" />
+        <rect x="30" y="56" width="60" height="16" rx="8" fill="currentColor" />
+        <rect x="20" y="78" width="76" height="16" rx="8" fill="currentColor" />
+      </symbol>
+    </svg>
+
+    <div class="frame">
+      <header class="bar">
+        <a class="mark" href="../" style="text-decoration:none"><svg style="color:var(--ink)"><use href="#mark" /></svg> SnapHAR</a>
+        <nav>
+          <a href="../">Home</a>
+          <a href="https://github.com/hummingbatman/snaphar">GitHub</a>
+        </nav>
+      </header>
+
+      <div class="drop" id="drop">
+        <div class="zone">
+          <h1>HAR viewer</h1>
+          <p>Drop a <code>.har</code> file here to inspect its requests, timings, headers, and bodies.</p>
+          <label class="browse">Choose file<input type="file" id="file" accept=".har,application/json,.json" hidden /></label>
+          <div class="sample"><a href="#" id="sampleLink">or view a sample &rarr;</a></div>
+          <div class="privacy-note">Parsed entirely in your browser. Your HAR is never uploaded.</div>
+          <div class="err" id="err"></div>
+        </div>
+      </div>
+
+      <div id="app" hidden>
+        <div class="summary" id="summary"></div>
+        <div class="toolbar">
+          <input type="search" id="search" placeholder="Filter by URL…" />
+          <div class="filters" id="filters"></div>
+          <span class="right"><button class="linklike" id="another">Load another</button></span>
+        </div>
+        <div class="split" id="split">
+          <div class="tablewrap">
+            <table>
+              <thead><tr>
+                <th data-sort="name">Name</th>
+                <th data-sort="status">Status</th>
+                <th data-sort="type">Type</th>
+                <th data-sort="size" class="c-num" style="text-align:right">Size</th>
+                <th data-sort="time" class="c-num" style="text-align:right">Time</th>
+                <th class="c-wf">Waterfall</th>
+              </tr></thead>
+              <tbody id="rows"></tbody>
+            </table>
+          </div>
+          <aside class="detail" id="detail"></aside>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+      let entries = [];        // normalized rows
+      let state = { type: 'all', q: '', sort: 'start', dir: 1, sel: -1 };
+
+      /* ---------- parsing & normalization ---------- */
+      function loadHar(text) {
+        let har;
+        try { har = JSON.parse(text); } catch { throw new Error('Not valid JSON.'); }
+        const log = har && har.log;
+        if (!log || !Array.isArray(log.entries)) throw new Error('Not a HAR file (missing log.entries).');
+
+        const t0 = Math.min(...log.entries.map((e) => Date.parse(e.startedDateTime) || 0));
+        entries = log.entries.map((e, i) => {
+          const start = (Date.parse(e.startedDateTime) || 0) - t0;
+          const time = Math.max(0, e.time || 0);
+          const res = e.response || {};
+          const size = bestSize(e);
+          return {
+            i, raw: e, start, time, end: start + time,
+            url: (e.request && e.request.url) || '',
+            name: nameOf((e.request && e.request.url) || ''),
+            method: (e.request && e.request.method) || '',
+            status: res.status || 0,
+            statusText: res.statusText || '',
+            type: deriveType(e),
+            size,
+          };
+        });
+        return { log, span: Math.max(1, ...entries.map((e) => e.end)) };
+      }
+
+      function bestSize(e) {
+        const r = e.response || {};
+        const body = r.bodySize > 0 ? r.bodySize : 0;
+        const head = r.headersSize > 0 ? r.headersSize : 0;
+        if (body + head > 0) return body + head;
+        if (r.content && r.content.size > 0) return r.content.size;
+        return 0;
+      }
+
+      function nameOf(url) {
+        try { const u = new URL(url); const p = u.pathname.split('/').filter(Boolean).pop(); return (p || u.hostname) + (u.search ? u.search : ''); }
+        catch { return url || '(unknown)'; }
+      }
+
+      function deriveType(e) {
+        const rt = (e._resourceType || '').toLowerCase();
+        if (rt) {
+          if (rt === 'document') return 'doc';
+          if (rt === 'stylesheet') return 'css';
+          if (rt === 'script') return 'js';
+          if (rt === 'xhr' || rt === 'fetch') return 'xhr';
+          if (rt === 'image') return 'img';
+          if (rt === 'font') return 'font';
+        }
+        const mt = ((e.response && e.response.content && e.response.content.mimeType) || '').toLowerCase();
+        if (mt.includes('html')) return 'doc';
+        if (mt.includes('css')) return 'css';
+        if (mt.includes('javascript') || mt.includes('ecmascript')) return 'js';
+        if (mt.includes('json') || mt.includes('xml')) return 'xhr';
+        if (mt.startsWith('image/')) return 'img';
+        if (mt.includes('font')) return 'font';
+        return 'other';
+      }
+
+      /* ---------- rendering ---------- */
+      const TYPES = ['all', 'doc', 'css', 'js', 'xhr', 'img', 'font', 'other'];
+
+      function render(span, log) {
+        renderSummary(log);
+        renderFilters();
+        renderRows(span);
+      }
+
+      function renderSummary(log) {
+        const transferred = entries.reduce((s, e) => s + e.size, 0);
+        const total = Math.max(0, ...entries.map((e) => e.end));
+        const pt = (log.pages && log.pages[0] && log.pages[0].pageTimings) || {};
+        const parts = [
+          `<span><span class="k">Requests</span><b>${entries.length}</b></span>`,
+          `<span><span class="k">Transferred</span><b>${fmtSize(transferred)}</b></span>`,
+          `<span><span class="k">Finish</span><b>${fmtTime(total)}</b></span>`,
+        ];
+        if (pt.onContentLoad > 0) parts.push(`<span><span class="k">DOMContentLoaded</span><b>${fmtTime(pt.onContentLoad)}</b></span>`);
+        if (pt.onLoad > 0) parts.push(`<span><span class="k">Load</span><b>${fmtTime(pt.onLoad)}</b></span>`);
+        $('summary').innerHTML = parts.join('');
+      }
+
+      function renderFilters() {
+        const present = new Set(entries.map((e) => e.type));
+        $('filters').innerHTML = TYPES.filter((t) => t === 'all' || present.has(t))
+          .map((t) => `<button data-type="${t}" class="${state.type === t ? 'on' : ''}">${t}${t === 'all' ? '' : ' ' + count(t)}</button>`).join('');
+      }
+      const count = (t) => entries.filter((e) => e.type === t).length;
+
+      function filtered() {
+        const q = state.q.toLowerCase();
+        let list = entries.filter((e) =>
+          (state.type === 'all' || e.type === state.type) &&
+          (!q || e.url.toLowerCase().includes(q)));
+        const key = state.sort;
+        list.sort((a, b) => {
+          let va = a[key], vb = b[key];
+          if (key === 'name') { va = a.name.toLowerCase(); vb = b.name.toLowerCase(); }
+          return (va < vb ? -1 : va > vb ? 1 : 0) * state.dir;
+        });
+        return list;
+      }
+
+      function renderRows(span) {
+        const list = filtered();
+        const rows = list.map((e) => {
+          const t = e.raw.timings || {};
+          const pre = Math.max(0, posNum(t.blocked) + posNum(t.dns) + posNum(t.connect) + posNum(t.send));
+          const wait = posNum(t.wait);
+          const recv = posNum(t.receive);
+          const denom = (pre + wait + recv) || e.time || 1;
+          const leftPct = (e.start / span) * 100;
+          const widthPct = Math.max(0.6, (e.time / span) * 100);
+          const seg = (v) => (v / denom) * 100;
+          const bar = `<span class="bar" style="left:${leftPct}%;width:${widthPct}%">
+              <i class="p1" style="width:${seg(pre)}%"></i>
+              <i class="p2" style="width:${seg(wait)}%"></i>
+              <i class="p3" style="width:${seg(recv)}%"></i></span>`;
+          const errCls = e.status === 0 || e.status >= 400 ? ' err' : '';
+          return `<tr data-i="${e.i}" class="${state.sel === e.i ? 'sel' : ''}">
+            <td class="c-name" title="${esc(e.url)}">${esc(e.name)}</td>
+            <td class="c-status${errCls}">${e.status || '—'}</td>
+            <td class="c-type">${e.type}</td>
+            <td class="c-num">${e.size ? fmtSize(e.size) : '—'}</td>
+            <td class="c-num">${fmtTime(e.time)}</td>
+            <td class="c-wf"><div class="track">${bar}</div></td>
+          </tr>`;
+        }).join('');
+        $('rows').innerHTML = rows || `<tr><td colspan="6" style="padding:24px;color:var(--gray)">No requests match.</td></tr>`;
+      }
+
+      /* ---------- detail panel ---------- */
+      function selectEntry(i) {
+        state.sel = i;
+        const e = entries.find((x) => x.i === i);
+        if (!e) return;
+        const r = e.raw, req = r.request || {}, res = r.response || {}, c = res.content || {};
+        const general = kv([
+          ['URL', r.request && r.request.url],
+          ['Method', req.method],
+          ['Status', `${res.status || '—'} ${esc(res.statusText || '')}`],
+          ['Protocol', res.httpVersion],
+          ['Remote', r.serverIPAddress],
+          ['Started', r.startedDateTime],
+        ]);
+        const sections = [
+          `<div class="sec"><h3>General</h3>${general}</div>`,
+          timingSec(r.timings),
+          headerSec('Request headers', req.headers),
+          headerSec('Response headers', res.headers),
+          listSec('Query string', req.queryString),
+          listSec('Request cookies', req.cookies),
+          bodySec(c),
+        ].filter(Boolean).join('');
+
+        $('detail').innerHTML = `
+          <div class="dhead">
+            <div>
+              <div style="font-family:var(--mono);font-size:12px;color:var(--gray)">${esc(req.method || '')} ${res.status || ''}</div>
+              <div class="u">${esc((req.url || '').slice(0, 300))}</div>
+            </div>
+            <button class="x" id="closeDetail" aria-label="Close">&times;</button>
+          </div>${sections}`;
+        $('split').classList.add('open');
+        $('closeDetail').onclick = closeDetail;
+        renderRows(currentSpan);
+      }
+      function closeDetail() { state.sel = -1; $('split').classList.remove('open'); renderRows(currentSpan); }
+
+      function kv(pairs) {
+        const rows = pairs.filter(([, v]) => v != null && v !== '').map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('');
+        return `<dl class="kv">${rows}</dl>`;
+      }
+      function headerSec(title, headers) {
+        if (!headers || !headers.length) return '';
+        const rows = headers.map((h) => `<dt>${esc(h.name)}</dt><dd>${esc(h.value)}</dd>`).join('');
+        return `<div class="sec"><h3>${esc(title)} · ${headers.length}</h3><dl class="kv">${rows}</dl></div>`;
+      }
+      function listSec(title, list) {
+        if (!list || !list.length) return '';
+        const rows = list.map((p) => `<dt>${esc(p.name)}</dt><dd>${esc(p.value)}</dd>`).join('');
+        return `<div class="sec"><h3>${esc(title)} · ${list.length}</h3><dl class="kv">${rows}</dl></div>`;
+      }
+      function timingSec(t) {
+        if (!t) return '';
+        const order = [['blocked', t.blocked], ['dns', t.dns], ['connect', t.connect], ['ssl', t.ssl], ['send', t.send], ['wait', t.wait], ['receive', t.receive]];
+        const max = Math.max(...order.map(([, v]) => posNum(v)), 1);
+        const rows = order.filter(([, v]) => v > 0).map(([k, v]) =>
+          `<div class="row"><span class="lbl">${k}</span><span class="meter"><i style="width:${(v / max) * 100}%"></i></span><span class="val">${v.toFixed(1)} ms</span></div>`).join('');
+        return `<div class="sec"><h3>Timings</h3><div class="timings">${rows}</div></div>`;
+      }
+      function bodySec(c) {
+        if (!c) return '';
+        const head = `<div class="sec"><h3>Response · ${esc(c.mimeType || 'body')} · ${fmtSize(c.size > 0 ? c.size : 0)}</h3>`;
+        if (c.text == null) return head + `<div style="color:var(--gray);font-size:12.5px;font-family:var(--mono)">No body captured.</div></div>`;
+        if (c.encoding === 'base64') return head + `<div style="color:var(--gray);font-size:12.5px;font-family:var(--mono)">base64-encoded binary (${esc(c.text.length)} chars). Preview omitted.</div></div>`;
+        const text = c.text.length > 8000 ? c.text.slice(0, 8000) + '\n… (truncated)' : c.text;
+        return head + `<pre class="body">${esc(text)}</pre></div>`;
+      }
+
+      /* ---------- helpers ---------- */
+      const posNum = (v) => (typeof v === 'number' && v > 0 ? v : 0);
+      function fmtSize(b) { if (!b) return '0 B'; if (b < 1024) return b + ' B'; if (b < 1048576) return (b / 1024).toFixed(1) + ' KB'; return (b / 1048576).toFixed(2) + ' MB'; }
+      function fmtTime(ms) { if (ms == null) return '—'; if (ms < 1000) return Math.round(ms) + ' ms'; return (ms / 1000).toFixed(2) + ' s'; }
+
+      /* ---------- wiring ---------- */
+      let currentSpan = 1;
+      function show(text) {
+        try {
+          const { log, span } = loadHar(text);
+          currentSpan = span;
+          $('drop').style.display = 'none';
+          $('app').hidden = false;
+          render(span, log);
+        } catch (e) {
+          $('err').textContent = e.message || String(e);
+        }
+      }
+      function readFile(file) {
+        $('err').textContent = '';
+        const fr = new FileReader();
+        fr.onload = () => show(fr.result);
+        fr.onerror = () => { $('err').textContent = 'Could not read file.'; };
+        fr.readAsText(file);
+      }
+
+      $('file').addEventListener('change', (e) => e.target.files[0] && readFile(e.target.files[0]));
+      const drop = $('drop');
+      ['dragenter', 'dragover'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('drag'); }));
+      ['dragleave', 'drop'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); if (ev === 'dragleave' && e.target !== drop) return; drop.classList.remove('drag'); }));
+      drop.addEventListener('drop', (e) => { const f = e.dataTransfer.files[0]; if (f) readFile(f); });
+
+      $('rows').addEventListener('click', (e) => { const tr = e.target.closest('tr[data-i]'); if (tr) selectEntry(+tr.dataset.i); });
+      $('search').addEventListener('input', (e) => { state.q = e.target.value; renderRows(currentSpan); });
+      $('filters').addEventListener('click', (e) => { const b = e.target.closest('button[data-type]'); if (!b) return; state.type = b.dataset.type; renderFilters(); renderRows(currentSpan); });
+      document.querySelector('thead').addEventListener('click', (e) => {
+        const th = e.target.closest('th[data-sort]'); if (!th) return;
+        const k = th.dataset.sort; state.dir = state.sort === k ? -state.dir : 1; state.sort = k; renderRows(currentSpan);
+      });
+      $('another').addEventListener('click', () => { entries = []; state.sel = -1; $('app').hidden = true; $('drop').style.display = 'flex'; $('split').classList.remove('open'); $('file').value = ''; });
+
+      // Sample HAR for instant demo
+      const SAMPLE = {"log":{"version":"1.2","creator":{"name":"SnapHAR","version":"1.0.0"},"pages":[{"id":"p","startedDateTime":"2026-06-17T15:00:00.000Z","title":"example.com","pageTimings":{"onContentLoad":420,"onLoad":1180}}],"entries":[
+        {"startedDateTime":"2026-06-17T15:00:00.000Z","time":210,"_resourceType":"document","request":{"method":"GET","url":"https://example.com/","headers":[{"name":"Accept","value":"text/html"}],"queryString":[],"cookies":[]},"response":{"status":200,"statusText":"OK","httpVersion":"HTTP/2","headers":[{"name":"content-type","value":"text/html; charset=utf-8"}],"content":{"size":1840,"mimeType":"text/html","text":"<!doctype html><title>Example</title>"},"bodySize":900,"headersSize":220},"serverIPAddress":"93.184.216.34","timings":{"blocked":1,"dns":8,"connect":40,"ssl":22,"send":1,"wait":120,"receive":40}},
+        {"startedDateTime":"2026-06-17T15:00:00.120Z","time":160,"_resourceType":"stylesheet","request":{"method":"GET","url":"https://example.com/app.css","headers":[],"queryString":[],"cookies":[]},"response":{"status":200,"statusText":"OK","httpVersion":"HTTP/2","headers":[{"name":"content-type","value":"text/css"}],"content":{"size":5200,"mimeType":"text/css"},"bodySize":1600,"headersSize":180},"timings":{"blocked":2,"dns":-1,"connect":-1,"ssl":-1,"send":1,"wait":90,"receive":67}},
+        {"startedDateTime":"2026-06-17T15:00:00.180Z","time":300,"_resourceType":"script","request":{"method":"GET","url":"https://cdn.example.com/app.js","headers":[],"queryString":[],"cookies":[]},"response":{"status":200,"statusText":"OK","httpVersion":"HTTP/2","headers":[{"name":"content-type","value":"application/javascript"}],"content":{"size":38000,"mimeType":"application/javascript"},"bodySize":12000,"headersSize":190},"timings":{"blocked":1,"dns":12,"connect":30,"ssl":18,"send":1,"wait":150,"receive":118}},
+        {"startedDateTime":"2026-06-17T15:00:00.260Z","time":340,"_resourceType":"xhr","request":{"method":"GET","url":"https://api.example.com/user?id=42","headers":[{"name":"accept","value":"application/json"}],"queryString":[{"name":"id","value":"42"}],"cookies":[]},"response":{"status":200,"statusText":"OK","httpVersion":"HTTP/1.1","headers":[{"name":"content-type","value":"application/json"}],"content":{"size":260,"mimeType":"application/json","text":"{\"id\":42,\"name\":\"Ada\"}"},"bodySize":260,"headersSize":160},"timings":{"blocked":1,"dns":-1,"connect":-1,"ssl":-1,"send":1,"wait":300,"receive":38}},
+        {"startedDateTime":"2026-06-17T15:00:00.300Z","time":60,"_resourceType":"xhr","request":{"method":"POST","url":"https://collector.example.com/collect","headers":[],"queryString":[],"cookies":[]},"response":{"status":204,"statusText":"No Content","httpVersion":"HTTP/2","headers":[],"content":{"size":0,"mimeType":"x-unknown"},"bodySize":0,"headersSize":120},"timings":{"blocked":1,"dns":-1,"connect":-1,"ssl":-1,"send":1,"wait":50,"receive":8}},
+        {"startedDateTime":"2026-06-17T15:00:00.360Z","time":120,"_resourceType":"image","request":{"method":"GET","url":"https://example.com/avatar.png","headers":[],"queryString":[],"cookies":[]},"response":{"status":200,"statusText":"OK","httpVersion":"HTTP/2","headers":[{"name":"content-type","value":"image/png"}],"content":{"size":14400,"mimeType":"image/png","encoding":"base64","text":"iVBORw0KGgo="},"bodySize":14400,"headersSize":150},"timings":{"blocked":2,"dns":-1,"connect":-1,"ssl":-1,"send":1,"wait":70,"receive":47}},
+        {"startedDateTime":"2026-06-17T15:00:00.500Z","time":90,"_resourceType":"script","request":{"method":"GET","url":"https://cdn.example.com/analytics.js","headers":[],"queryString":[],"cookies":[]},"response":{"status":404,"statusText":"Not Found","httpVersion":"HTTP/2","headers":[{"name":"content-type","value":"text/html"}],"content":{"size":0,"mimeType":"text/html"},"bodySize":0,"headersSize":140},"timings":{"blocked":1,"dns":-1,"connect":-1,"ssl":-1,"send":1,"wait":80,"receive":8}}
+      ]}};
+      $('sampleLink').addEventListener('click', (e) => { e.preventDefault(); show(JSON.stringify(SAMPLE)); });
+      if (location.hash === '#sample') show(JSON.stringify(SAMPLE));
+    </script>
+  </body>
+</html>
