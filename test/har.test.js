@@ -162,7 +162,7 @@ test('harToDataUrl / base64FromBytes match Node Buffer base64', () => {
 
   const json = JSON.stringify({ hello: 'wörld' });
   const url = harToDataUrl(json);
-  assert.ok(url.startsWith('data:application/json;base64,'));
+  assert.ok(url.startsWith('data:application/octet-stream;base64,'));
   const decoded = Buffer.from(url.split(',')[1], 'base64').toString('utf8');
   assert.equal(decoded, json);
 });

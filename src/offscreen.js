@@ -13,7 +13,9 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   switch (message.type) {
     case 'create-blob-url': {
       try {
-        const blob = new Blob([message.json], { type: 'application/json' });
+        // octet-stream so the browser keeps our ".har" filename (an
+        // application/json blob would be saved as ".json").
+        const blob = new Blob([message.json], { type: 'application/octet-stream' });
         sendResponse({ url: URL.createObjectURL(blob) });
       } catch (err) {
         sendResponse({ error: String(err && err.message ? err.message : err) });

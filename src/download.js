@@ -21,7 +21,9 @@ const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz012345
  */
 export function harToDataUrl(jsonString) {
   const bytes = new TextEncoder().encode(jsonString);
-  return 'data:application/json;base64,' + base64FromBytes(bytes);
+  // Use octet-stream, not application/json: Chrome/Edge rename a download to
+  // match a recognized MIME type, which would turn our ".har" into ".json".
+  return 'data:application/octet-stream;base64,' + base64FromBytes(bytes);
 }
 
 export function base64FromBytes(bytes) {
