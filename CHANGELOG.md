@@ -4,7 +4,7 @@ All notable changes to SnapHAR are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.0] - 2026-06-17
 
 ### Added
 - One-click capture via the popup: **Start Recording** / **Stop & Export**.
@@ -31,4 +31,4 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Zero-dependency packaging (`npm run package`) and icon generation scripts.
 - GitHub Actions CI: lint + test.
 
-[Unreleased]: https://example.com/snaphar/commits
+[1.0.0]: https://github.com/hummingbatman/snaphar/releases/tag/v1.0.0

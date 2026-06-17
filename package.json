@@ -1,6 +1,6 @@
 {
   "name": "snaphar",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "One-click HAR capture for Chromium browsers (Edge, Chrome, Brave, ...) — record network traffic without opening DevTools.",
   "private": true,
   "type": "module",

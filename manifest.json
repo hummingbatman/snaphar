@@ -1,14 +1,14 @@
 {
   "manifest_version": 3,
   "name": "SnapHAR",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "One-click HAR capture. Record network traffic and export a HAR 1.2 file without opening DevTools.",
+  "homepage_url": "https://github.com/hummingbatman/snaphar",
   "permissions": [
     "debugger",
     "downloads",
     "storage",
     "activeTab",
-    "tabs",
     "alarms",
     "offscreen"
   ],

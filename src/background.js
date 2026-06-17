@@ -249,6 +249,7 @@ async function exportHar() {
     redactHeaders: settings.redactHeaders,
     redactQuery: settings.redactQuery,
     redactBodies: settings.redactBodies,
+    creator: { name: 'SnapHAR', version: chrome.runtime.getManifest().version },
     browser: browser.name,
     browserVersion: browser.version,
   });

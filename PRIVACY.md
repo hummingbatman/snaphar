@@ -51,7 +51,7 @@ You can also edit or delete entries in the `.har` (it's plain JSON) before shari
 | `debugger` | Attaches the Chrome DevTools Protocol to the active tab to read `Network.*` events and response bodies. This is the core capture mechanism and the reason no DevTools window is required. |
 | `downloads` | Saves the assembled `.har` file to your Downloads folder. |
 | `storage` | Persists your settings and short-lived in-progress capture state. |
-| `activeTab` / `tabs` | Identifies the active tab to record and shows its URL/title in the popup. |
+| `activeTab` | Grants access to the tab you choose to record (when you open the popup) so SnapHAR can attach to it and show its URL/title. |
 | `alarms` | A periodic heartbeat that keeps the service worker alive during long recordings (MV3 workers are otherwise suspended when idle). |
 | `offscreen` | Creates a Blob URL to download unusually large HAR files that exceed `data:` URL limits. |
 

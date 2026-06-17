@@ -17,7 +17,7 @@
  */
 
 export const HAR_VERSION = '1.2';
-export const DEFAULT_CREATOR = { name: 'SnapHAR', version: '0.1.0' };
+export const DEFAULT_CREATOR = { name: 'SnapHAR', version: '1.0.0' };
 
 const REDACTED = '[redacted by SnapHAR]';
 const REDACTED_TOKEN = 'REDACTED'; // URL-safe placeholder for query values
