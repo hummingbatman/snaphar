@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SnapHAR — One-click HAR capture for Edge &amp; Chrome</title>
+    <meta name="description" content="SnapHAR records a page's network traffic and exports a spec-compliant HAR 1.2 file in two clicks — no DevTools required. Safe by default, open source." />
+    <meta name="theme-color" content="#0B57A4" />
+
+    <!-- Open Graph / social -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="SnapHAR — One-click HAR capture" />
+    <meta property="og:description" content="Record network traffic and export a HAR 1.2 file in two clicks. No DevTools required. Safe by default, open source." />
+    <meta property="og:url" content="https://hummingbatman.github.io/snaphar/" />
+    <meta property="og:image" content="https://hummingbatman.github.io/snaphar/icon128.png" />
+    <meta name="twitter:card" content="summary" />
+
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="alternate icon" href="icon128.png" />
+
+    <style>
+      :root {
+        --blue1: #3aa0ff;
+        --blue2: #0b57a4;
+        --amber: #ffb020;
+        --ink: #14202b;
+        --muted: #5b6b78;
+        --line: #e6ebf0;
+        --card: #ffffff;
+        --bg: #f6f9fc;
+        --radius: 16px;
+        --maxw: 1040px;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --ink: #eef3f8;
+          --muted: #9fb0be;
+          --line: #25323d;
+          --card: #16212b;
+          --bg: #0d161e;
+        }
+      }
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        color: var(--ink);
+        background: var(--bg);
+        -webkit-font-smoothing: antialiased;
+      }
+      a { color: inherit; }
+      .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 22px; }
+
+      /* Nav */
+      nav {
+        display: flex; align-items: center; gap: 12px;
+        padding: 18px 22px; max-width: var(--maxw); margin: 0 auto;
+      }
+      nav .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 18px; }
+      nav .brand svg { width: 28px; height: 28px; border-radius: 7px; display: block; }
+      nav .spacer { flex: 1; }
+      nav a.navlink { text-decoration: none; color: var(--muted); font-weight: 600; font-size: 14px; }
+      nav a.navlink:hover { color: var(--ink); }
+
+      /* Hero */
+      .hero {
+        position: relative; overflow: hidden;
+        background: radial-gradient(1200px 500px at 80% -10%, rgba(58,160,255,0.25), transparent 60%),
+                    linear-gradient(160deg, var(--blue2), #073b73 70%);
+        color: #fff;
+        border-radius: 0 0 28px 28px;
+      }
+      .hero .wrap { padding-top: 56px; padding-bottom: 64px; display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 40px; align-items: center; }
+      .hero h1 { font-size: clamp(32px, 5vw, 52px); line-height: 1.05; margin: 0 0 16px; letter-spacing: -0.02em; }
+      .hero h1 .accent { color: var(--amber); }
+      .hero p.lead { font-size: 18px; color: #cfe3fb; margin: 0 0 26px; max-width: 30em; }
+      .badge-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+      .btn {
+        display: inline-flex; align-items: center; gap: 8px;
+        text-decoration: none; font-weight: 700; font-size: 15px;
+        padding: 12px 18px; border-radius: 12px; border: 1px solid transparent;
+      }
+      .btn--primary { background: #fff; color: var(--blue2); }
+      .btn--primary:hover { background: #eaf3ff; }
+      .btn--ghost { background: rgba(255,255,255,0.08); color: #fff; border-color: rgba(255,255,255,0.28); }
+      .btn--ghost:hover { background: rgba(255,255,255,0.16); }
+      .hero small.note { display: block; color: #9fc2ec; font-size: 13px; margin-top: 4px; }
+
+      /* Popup mockup */
+      .mock {
+        background: var(--card); color: var(--ink);
+        width: 300px; margin: 0 auto; border-radius: 16px;
+        box-shadow: 0 30px 60px rgba(2, 22, 45, 0.45);
+        overflow: hidden; border: 1px solid rgba(255,255,255,0.12);
+      }
+      .mock .m-head { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--line); font-weight: 700; }
+      .mock .m-head svg { width: 20px; height: 20px; border-radius: 5px; }
+      .mock .m-head .gear { margin-left: auto; color: var(--muted); }
+      .mock .m-body { padding: 16px 14px; }
+      .mock .status { display: flex; align-items: center; gap: 8px; font-weight: 700; margin-bottom: 14px; }
+      .mock .dot { width: 10px; height: 10px; border-radius: 50%; background: #c4314b; animation: pulse 1.2s infinite; }
+      @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+      .mock .stats { display: flex; gap: 10px; margin-bottom: 14px; }
+      .mock .stat { flex: 1; background: var(--bg); border-radius: 10px; padding: 8px 10px; }
+      .mock .stat .k { font-size: 11px; color: var(--muted); }
+      .mock .stat .v { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; }
+      .mock .cta { background: #c4314b; color: #fff; text-align: center; padding: 11px; border-radius: 10px; font-weight: 700; }
+
+      /* Sections */
+      section { padding: 64px 0; }
+      section h2 { font-size: clamp(24px, 3.4vw, 34px); margin: 0 0 8px; letter-spacing: -0.01em; text-align: center; }
+      section .sub { color: var(--muted); text-align: center; max-width: 36em; margin: 0 auto 40px; }
+
+      .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+      .step { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
+      .step .n { width: 32px; height: 32px; border-radius: 9px; background: linear-gradient(160deg, var(--blue1), var(--blue2)); color: #fff; font-weight: 800; display: grid; place-items: center; margin-bottom: 12px; }
+      .step h3 { margin: 0 0 6px; font-size: 17px; }
+      .step p { margin: 0; color: var(--muted); font-size: 14px; }
+
+      .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+      .feat { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
+      .feat .ic { font-size: 22px; margin-bottom: 10px; }
+      .feat h3 { margin: 0 0 6px; font-size: 16px; }
+      .feat p { margin: 0; color: var(--muted); font-size: 14px; }
+
+      .privacy { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 32px; max-width: 760px; margin: 0 auto; }
+      .privacy h2 { text-align: left; }
+      .privacy ul { margin: 14px 0 0; padding-left: 20px; color: var(--muted); }
+      .privacy li { margin-bottom: 8px; }
+      .privacy .pill { display: inline-block; background: rgba(46,125,50,0.14); color: #2e7d32; font-weight: 700; font-size: 12px; padding: 4px 10px; border-radius: 999px; }
+      @media (prefers-color-scheme: dark) { .privacy .pill { color: #7fd587; } }
+
+      .install code, .install pre { font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace; }
+      .install pre { background: #0d1b2a; color: #d7e3f0; padding: 18px 20px; border-radius: 14px; overflow:auto; font-size: 14px; max-width: 760px; margin: 0 auto; }
+      .install .muted { color: #7e93a8; }
+
+      footer { border-top: 1px solid var(--line); padding: 34px 0; color: var(--muted); font-size: 14px; }
+      footer .wrap { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+      footer a { color: var(--muted); text-decoration: none; font-weight: 600; }
+      footer a:hover { color: var(--ink); }
+      footer .spacer { flex: 1; }
+
+      @media (max-width: 820px) {
+        .hero .wrap { grid-template-columns: 1fr; padding-bottom: 48px; }
+        .hero .art { order: -1; }
+        .steps, .grid { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Shared inline logo (the extension icon) -->
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+      <defs>
+        <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#3AA0FF" />
+          <stop offset="1" stop-color="#0B57A4" />
+        </linearGradient>
+        <symbol id="logo" viewBox="0 0 128 128">
+          <rect x="6" y="6" width="116" height="116" rx="30" fill="url(#lg)" />
+          <rect x="28" y="39" width="72" height="14" rx="7" fill="#fff" />
+          <rect x="40" y="61" width="46" height="14" rx="7" fill="#FFB020" />
+          <rect x="34" y="83" width="58" height="14" rx="7" fill="#fff" fill-opacity="0.92" />
+        </symbol>
+      </defs>
+    </svg>
+
+    <nav>
+      <span class="brand"><svg><use href="#logo" /></svg> SnapHAR</span>
+      <span class="spacer"></span>
+      <a class="navlink" href="#how">How it works</a>
+      <a class="navlink" href="#features">Features</a>
+      <a class="navlink" href="#privacy">Privacy</a>
+      <a class="navlink" href="https://github.com/hummingbatman/snaphar">GitHub</a>
+    </nav>
+
+    <header class="hero">
+      <div class="wrap">
+        <div class="copy">
+          <h1>Capture a HAR in <span class="accent">two clicks.</span></h1>
+          <p class="lead">
+            SnapHAR records a page's network traffic and exports a spec-compliant
+            <strong>HAR 1.2</strong> file — without ever opening DevTools. Open the popup,
+            hit record, reproduce the issue, stop. Done.
+          </p>
+          <div class="badge-row">
+            <a class="btn btn--primary" href="https://github.com/hummingbatman/snaphar/releases">⬇ Get the latest release</a>
+            <a class="btn btn--ghost" href="https://github.com/hummingbatman/snaphar">★ View on GitHub</a>
+          </div>
+          <small class="note">Coming soon to the Microsoft Edge Add-ons store and the Chrome Web Store.</small>
+        </div>
+        <div class="art">
+          <div class="mock" role="img" aria-label="SnapHAR popup, recording">
+            <div class="m-head"><svg><use href="#logo" /></svg> SnapHAR <span class="gear">⚙</span></div>
+            <div class="m-body">
+              <div class="status"><span class="dot"></span> Recording…</div>
+              <div class="stats">
+                <div class="stat"><div class="k">Elapsed</div><div class="v">0:42</div></div>
+                <div class="stat"><div class="k">Requests</div><div class="v">128</div></div>
+              </div>
+              <div class="cta">Stop &amp; Export</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section id="how">
+      <div class="wrap">
+        <h2>From F12 gymnastics to one click</h2>
+        <p class="sub">The manual flow is fiddly: open DevTools, find Network, enable Preserve log, reproduce, right-click, export. SnapHAR collapses all of it.</p>
+        <div class="steps">
+          <div class="step"><div class="n">1</div><h3>Start Recording</h3><p>Open the popup and click record. SnapHAR attaches the DevTools protocol to your tab behind the scenes.</p></div>
+          <div class="step"><div class="n">2</div><h3>Reproduce the issue</h3><p>Reload, click around, trigger the bug. Capture survives reloads and redirects — preserve-log is built in.</p></div>
+          <div class="step"><div class="n">3</div><h3>Stop &amp; Export</h3><p>Get a valid HAR 1.2 file in your Downloads, ready to re-import into DevTools or hand to support.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="features" style="background:linear-gradient(180deg, transparent, rgba(58,160,255,0.05));">
+      <div class="wrap">
+        <h2>Everything a good HAR needs</h2>
+        <p class="sub">Built on the same CDP → HAR mapping the pros use, with the rough edges handled.</p>
+        <div class="grid">
+          <div class="feat"><div class="ic">⚡</div><h3>No DevTools required</h3><p>One-click capture from the toolbar popup. Live elapsed timer and request count while you record.</p></div>
+          <div class="feat"><div class="ic">🔁</div><h3>Preserve-log by default</h3><p>State is never cleared on navigation, so reloads and redirect chains are captured as discrete entries.</p></div>
+          <div class="feat"><div class="ic">📦</div><h3>Response bodies included</h3><p>Text and base64 bodies with a configurable per-response size cap, plus full timings, headers, and cookies.</p></div>
+          <div class="feat"><div class="ic">🛡️</div><h3>Safe by default</h3><p>Sensitive headers, cookies, and URL tokens are redacted automatically — going further than browser DevTools.</p></div>
+          <div class="feat"><div class="ic">🧭</div><h3>Edge, Chrome &amp; Chromium</h3><p>One Manifest V3 build runs across Chromium browsers. The exported HAR names whichever one you used.</p></div>
+          <div class="feat"><div class="ic">🔍</div><h3>Spec-compliant HAR 1.2</h3><p>Re-import into the DevTools Network tab or any HAR analyzer. Verified against a recorded CDP fixture.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="privacy">
+      <div class="wrap">
+        <div class="privacy">
+          <span class="pill">Private by design</span>
+          <h2>Your data never leaves your device</h2>
+          <p>SnapHAR has no servers, no analytics, and no telemetry. Captured traffic is assembled locally and saved straight to your Downloads folder.</p>
+          <ul>
+            <li><strong>Redacted by default:</strong> <code>Authorization</code>, <code>Cookie</code>, <code>Set-Cookie</code>, API-key/auth headers, and sensitive URL tokens (<code>access_token</code>, <code>code</code>, <code>secret</code>, …).</li>
+            <li><strong>You're in control:</strong> toggle body capture, size caps, and redaction in settings.</li>
+            <li><strong>Transparent permissions:</strong> the <code>debugger</code> permission powers capture and is active only while you record.</li>
+          </ul>
+          <p style="margin-top:16px"><a class="btn btn--ghost" style="color:var(--ink);border-color:var(--line)" href="https://github.com/hummingbatman/snaphar/blob/main/PRIVACY.md">Read the full privacy &amp; permissions note →</a></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="install" style="padding-top:0;">
+      <div class="wrap">
+        <h2>Install in 30 seconds</h2>
+        <p class="sub">Until it's in the stores, load it unpacked:</p>
+        <pre><span class="muted"># grab the latest release zip, unzip it, then:</span>
+1. Open  edge://extensions   <span class="muted">(or chrome://extensions)</span>
+2. Enable <span style="color:#ffd479">Developer mode</span>
+3. Click  <span style="color:#ffd479">Load unpacked</span>  and select the folder
+4. Pin SnapHAR and start recording</pre>
+      </div>
+    </section>
+
+    <footer>
+      <div class="wrap">
+        <span class="brand" style="display:flex;align-items:center;gap:8px;font-weight:700;color:var(--ink)"><svg style="width:22px;height:22px;border-radius:6px"><use href="#logo" /></svg> SnapHAR</span>
+        <span class="spacer"></span>
+        <a href="https://github.com/hummingbatman/snaphar">GitHub</a>
+        <a href="https://github.com/hummingbatman/snaphar/blob/main/PRIVACY.md">Privacy</a>
+        <a href="https://github.com/hummingbatman/snaphar/blob/main/CHANGELOG.md">Changelog</a>
+        <a href="https://github.com/hummingbatman/snaphar/blob/main/LICENSE">MIT License</a>
+      </div>
+    </footer>
+  </body>
+</html>
