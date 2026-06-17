@@ -8,6 +8,7 @@
     "test": "node --test",
     "lint": "node --check src/background.js && node --check src/har.js && node --check src/cdp-collector.js && node --check src/popup.js && node --check src/options.js && node --check src/offscreen.js && node --check src/download.js",
     "icons": "node scripts/make-icons.mjs",
+    "screenshots": "node scripts/make-screenshots.mjs",
     "package": "node scripts/package.js"
   },
   "keywords": [

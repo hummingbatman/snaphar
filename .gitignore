@@ -5,6 +5,9 @@ node_modules/
 dist/
 *.zip
 
+# Generated store screenshots (regenerate with `npm run screenshots`)
+screenshots/
+
 # OS / editor cruft
 .DS_Store
 Thumbs.db
