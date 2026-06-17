@@ -62,11 +62,23 @@
 
     <fieldset>
       <legend>Privacy</legend>
+      <p class="hint" style="margin-top:0">
+        SnapHAR sanitizes sensitive headers and URL tokens <strong>by default</strong>.
+        Uncheck these only when you specifically need the raw values (e.g. debugging auth).
+        Note: exported HARs can still contain secrets inside <em>response bodies</em>.
+      </p>
       <div class="row check">
         <input type="checkbox" id="redactHeaders" />
         <div>
           <label class="block" for="redactHeaders">Redact sensitive headers &amp; cookies</label>
-          <p class="hint">Replaces <code>Authorization</code>, <code>Cookie</code>, and <code>Set-Cookie</code> values.</p>
+          <p class="hint">Masks <code>Authorization</code>, <code>Cookie</code>, <code>Set-Cookie</code>, and common API-key/auth headers.</p>
+        </div>
+      </div>
+      <div class="row check">
+        <input type="checkbox" id="redactQuery" />
+        <div>
+          <label class="block" for="redactQuery">Redact sensitive URL tokens</label>
+          <p class="hint">Masks query/fragment values like <code>token</code>, <code>access_token</code>, <code>code</code>, <code>api_key</code>, <code>secret</code>, <code>password</code>, <code>sig</code>.</p>
         </div>
       </div>
       <div class="row check">

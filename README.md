@@ -58,9 +58,16 @@ Open the popup's ⚙ button (or the extension's options page):
 | --- | --- | --- |
 | Include response bodies | on | Captures actual response content. |
 | Max body size per response | 5 MB | Larger responses keep metadata, skip the body. |
-| Redact sensitive headers & cookies | off | Masks `Authorization`, `Cookie`, `Set-Cookie`. |
+| Redact sensitive headers & cookies | **on** | Masks `Authorization`, `Cookie`, `Set-Cookie`, and common API-key/auth headers. |
+| Redact sensitive URL tokens | **on** | Masks query/fragment values like `token`, `access_token`, `code`, `api_key`, `secret`, `password`, `sig`. |
 | Strip response body text | off | Keeps sizes/timings, removes body content. |
 | Filename pattern | `snaphar_{host}_{datetime}` | Tokens: `{host} {title} {date} {time} {datetime} {ts}`. |
+
+SnapHAR is **safe by default**: like recent DevTools it sanitizes sensitive
+headers/cookies, and goes further by also masking sensitive URL tokens (which
+DevTools leaves intact). Uncheck those options only when you need raw values
+(e.g. debugging auth). Response **bodies are still included** by default and can
+contain secrets — strip or cap them before sharing.
 
 ## Known behaviors & limitations
 

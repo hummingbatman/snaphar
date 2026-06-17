@@ -26,8 +26,9 @@ const PERSIST_THROTTLE_MS = 750;
 const DEFAULT_SETTINGS = {
   includeBodies: true,
   maxBodySize: 5 * 1024 * 1024, // 5 MB per response body
-  redactHeaders: false,
-  redactBodies: false,
+  redactHeaders: true, // safe-by-default: sanitize sensitive headers/cookies
+  redactQuery: true, // safe-by-default: sanitize sensitive URL tokens
+  redactBodies: false, // opt-in: bodies are often the point of the capture
   filenamePattern: 'snaphar_{host}_{datetime}',
 };
 
@@ -245,6 +246,7 @@ async function exportHar() {
 
   const har = buildHar(collected, {
     redactHeaders: settings.redactHeaders,
+    redactQuery: settings.redactQuery,
     redactBodies: settings.redactBodies,
     browser: 'Microsoft Edge',
   });

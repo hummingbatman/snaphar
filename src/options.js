@@ -8,7 +8,8 @@
 const DEFAULT_SETTINGS = {
   includeBodies: true,
   maxBodySize: 5 * 1024 * 1024,
-  redactHeaders: false,
+  redactHeaders: true,
+  redactQuery: true,
   redactBodies: false,
   filenamePattern: 'snaphar_{host}_{datetime}',
 };
@@ -17,6 +18,7 @@ const els = {
   includeBodies: document.getElementById('includeBodies'),
   maxBodySize: document.getElementById('maxBodySize'),
   redactHeaders: document.getElementById('redactHeaders'),
+  redactQuery: document.getElementById('redactQuery'),
   redactBodies: document.getElementById('redactBodies'),
   filenamePattern: document.getElementById('filenamePattern'),
   save: document.getElementById('save'),
@@ -28,6 +30,7 @@ function apply(settings) {
   els.includeBodies.checked = settings.includeBodies;
   els.maxBodySize.value = Math.round(settings.maxBodySize / 1024);
   els.redactHeaders.checked = settings.redactHeaders;
+  els.redactQuery.checked = settings.redactQuery;
   els.redactBodies.checked = settings.redactBodies;
   els.filenamePattern.value = settings.filenamePattern;
 }
@@ -38,6 +41,7 @@ function collect() {
     includeBodies: els.includeBodies.checked,
     maxBodySize: Number.isFinite(kb) && kb >= 0 ? Math.round(kb * 1024) : DEFAULT_SETTINGS.maxBodySize,
     redactHeaders: els.redactHeaders.checked,
+    redactQuery: els.redactQuery.checked,
     redactBodies: els.redactBodies.checked,
     filenamePattern: els.filenamePattern.value.trim() || DEFAULT_SETTINGS.filenamePattern,
   };

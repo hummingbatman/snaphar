@@ -20,7 +20,48 @@ export const HAR_VERSION = '1.2';
 export const DEFAULT_CREATOR = { name: 'SnapHAR', version: '0.1.0' };
 
 const REDACTED = '[redacted by SnapHAR]';
-const REDACTABLE_HEADERS = new Set(['authorization', 'cookie', 'set-cookie', 'proxy-authorization']);
+const REDACTED_TOKEN = 'REDACTED'; // URL-safe placeholder for query values
+
+// Headers whose values commonly carry secrets. DevTools sanitizes the first
+// four; SnapHAR also covers common custom auth headers.
+const REDACTABLE_HEADERS = new Set([
+  'authorization',
+  'proxy-authorization',
+  'cookie',
+  'set-cookie',
+  'authentication',
+  'x-api-key',
+  'api-key',
+  'x-auth-token',
+  'x-access-token',
+  'x-session-token',
+  'x-amz-security-token',
+  'x-functions-key',
+]);
+
+// Query-string parameters whose values commonly carry secrets (DevTools does
+// not redact these).
+const SENSITIVE_QUERY_PARAMS = new Set([
+  'token',
+  'access_token',
+  'refresh_token',
+  'id_token',
+  'auth',
+  'code',
+  'key',
+  'api_key',
+  'apikey',
+  'secret',
+  'client_secret',
+  'password',
+  'passwd',
+  'pwd',
+  'sig',
+  'signature',
+  'session',
+  'sessionid',
+  'sid',
+]);
 
 /**
  * Build a complete HAR 1.2 log from collected, normalized records.
@@ -101,13 +142,14 @@ function entryFromRecord(record, options) {
 
 function buildRequest(request, headers, options) {
   const headerList = redactHeaders(headersToList(headers), options);
+  const url = options.redactQuery ? redactUrlTokens(request.url || '') : request.url || '';
   const out = {
     method: request.method || 'GET',
-    url: request.url || '',
+    url,
     httpVersion: 'HTTP/1.1',
     cookies: redactCookies(parseRequestCookies(headers), options),
     headers: headerList,
-    queryString: parseQueryString(request.url),
+    queryString: parseQueryString(url),
     headersSize: -1,
     bodySize: postBodySize(request),
   };
@@ -141,7 +183,7 @@ function buildResponse(record, response, headers, options) {
     cookies: redactCookies(parseResponseCookies(headers), options),
     headers: headerList,
     content: buildContent(record, response, headers, options),
-    redirectURL: findHeader(headers, 'location') || '',
+    redirectURL: redactRedirect(findHeader(headers, 'location') || '', options),
     headersSize: headersTextSize(response.headersText),
     bodySize: numberOr(record.encodedDataLength, response.encodedDataLength ?? -1),
   };
@@ -385,6 +427,38 @@ function redactHeaders(list, options) {
 function redactCookies(list, options) {
   if (!options.redactHeaders) return list;
   return list.map((c) => ({ ...c, value: REDACTED }));
+}
+
+/** Replace values of known-sensitive query parameters in a URL. */
+export function redactUrlTokens(url) {
+  if (!url || (!url.includes('?') && !url.includes('#'))) return url;
+  try {
+    const u = new URL(url);
+    let changed = false;
+    const replace = (params) => {
+      for (const key of [...params.keys()]) {
+        if (SENSITIVE_QUERY_PARAMS.has(key.toLowerCase())) {
+          params.set(key, REDACTED_TOKEN);
+          changed = true;
+        }
+      }
+    };
+    replace(u.searchParams);
+    // Tokens sometimes hide in the fragment (e.g. OAuth implicit flow).
+    if (u.hash.length > 1) {
+      const frag = new URLSearchParams(u.hash.slice(1));
+      const before = frag.toString();
+      replace(frag);
+      if (frag.toString() !== before) u.hash = frag.toString();
+    }
+    return changed ? u.toString() : url;
+  } catch {
+    return url;
+  }
+}
+
+function redactRedirect(url, options) {
+  return options.redactQuery ? redactUrlTokens(url) : url;
 }
 
 /* --------------------------------------------------------------------------

@@ -24,12 +24,23 @@ site and your settings, it **may include sensitive data**:
 - Request bodies (form data, JSON payloads)
 - **Response bodies** (page content, API responses) — included by default
 
-**Treat exported HAR files as sensitive.** Before sharing one, consider enabling:
+**SnapHAR is safe by default.** Out of the box it sanitizes the data that most
+often leaks credentials:
 
-- **Redact sensitive headers & cookies** — masks `Authorization`, `Cookie`,
-  `Set-Cookie`, `Proxy-Authorization`.
+- **Redact sensitive headers & cookies** (on) — masks `Authorization`, `Cookie`,
+  `Set-Cookie`, `Proxy-Authorization`, and common API-key/auth headers.
+- **Redact sensitive URL tokens** (on) — masks query/fragment values such as
+  `token`, `access_token`, `id_token`, `code`, `api_key`, `secret`, `password`,
+  `sig`. (Browser DevTools does not redact these.)
+
+**Treat exported HAR files as sensitive anyway.** Redaction cannot catch secrets
+embedded in response bodies. Before sharing, also consider:
+
 - **Strip response body text** — removes captured body content (keeps sizes/timings).
 - A **smaller max body size**, or **disable bodies** entirely.
+
+You can turn the redaction options off when you specifically need raw values
+(e.g. debugging an auth flow).
 
 You can also edit or delete entries in the `.har` (it's plain JSON) before sharing.
 

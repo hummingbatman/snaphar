@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 import { CdpCollector } from '../src/cdp-collector.js';
-import { buildHar, computeTimings } from '../src/har.js';
+import { buildHar, computeTimings, redactUrlTokens } from '../src/har.js';
 import { harToDataUrl, base64FromBytes, formatFilename } from '../src/download.js';
 
 const fixture = JSON.parse(
@@ -25,6 +25,24 @@ function buildFromFixture(options) {
 }
 
 const findEntry = (log, url) => log.entries.find((e) => e.request.url === url);
+
+/** Minimal one-entry `collected` shape for targeted redaction tests. */
+function recordWith({ url = 'https://api.example.com/', reqHeaders = {}, resHeaders = {} } = {}) {
+  return {
+    entries: [
+      {
+        requestId: 'x',
+        request: { url, method: 'GET', headers: reqHeaders },
+        response: { url, status: 200, statusText: 'OK', headers: resHeaders, mimeType: 'text/plain', timing: null },
+        wallTime: 1700000000,
+        startTimestamp: 1,
+        responseTimestamp: 1.01,
+        finishedTimestamp: 1.02,
+      },
+    ],
+    pages: [],
+  };
+}
 
 test('produces a HAR 1.2 log with SnapHAR creator', () => {
   const log = buildFromFixture();
@@ -132,6 +150,40 @@ test('redactHeaders option masks Authorization/Cookie/Set-Cookie and cookie valu
   const setCookie = entry.response.headers.find((h) => h.name === 'Set-Cookie');
   assert.match(setCookie.value, /redacted/);
   assert.match(entry.request.cookies[0].value, /redacted/);
+});
+
+test('redactHeaders masks custom auth headers (e.g. X-Api-Key)', () => {
+  const collected = recordWith({ reqHeaders: { 'X-Api-Key': 'topsecret', Accept: '*/*' } });
+  const entry = buildHar(collected, { redactHeaders: true }).log.entries[0];
+  const apiKey = entry.request.headers.find((h) => h.name === 'X-Api-Key');
+  assert.match(apiKey.value, /redacted/);
+  assert.equal(entry.request.headers.find((h) => h.name === 'Accept').value, '*/*');
+});
+
+test('redactQuery masks sensitive query params in url and queryString', () => {
+  const url = 'https://api.example.com/cb?access_token=abc123&page=2';
+  const entry = buildHar(recordWith({ url }), { redactQuery: true }).log.entries[0];
+  assert.doesNotMatch(entry.request.url, /abc123/);
+  assert.match(entry.request.url, /access_token=REDACTED/);
+  const tok = entry.request.queryString.find((q) => q.name === 'access_token');
+  assert.equal(tok.value, 'REDACTED');
+  assert.equal(entry.request.queryString.find((q) => q.name === 'page').value, '2');
+});
+
+test('redactQuery is a no-op when disabled', () => {
+  const url = 'https://api.example.com/cb?token=keepme';
+  const entry = buildHar(recordWith({ url }), {}).log.entries[0];
+  assert.match(entry.request.url, /token=keepme/);
+});
+
+test('redactUrlTokens covers query and fragment, leaves benign params', () => {
+  assert.equal(
+    redactUrlTokens('https://x.com/p?id=1&sig=deadbeef'),
+    'https://x.com/p?id=1&sig=REDACTED'
+  );
+  assert.match(redactUrlTokens('https://x.com/#access_token=xyz&state=ok'), /access_token=REDACTED/);
+  assert.match(redactUrlTokens('https://x.com/#access_token=xyz&state=ok'), /state=ok/);
+  assert.equal(redactUrlTokens('https://x.com/path/no/query'), 'https://x.com/path/no/query');
 });
 
 test('redactBodies option strips response body text', () => {

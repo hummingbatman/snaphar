@@ -14,8 +14,13 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   query strings, post data, content bodies (text/base64), pages, and redirect
   hops as discrete entries.
 - Response body capture with a configurable per-response size cap.
-- Options page: include bodies, max body size, header redaction, body stripping,
-  filename pattern.
+- Safe-by-default privacy: sanitizes sensitive headers/cookies (incl. common
+  API-key/auth headers) and sensitive URL query/fragment tokens by default;
+  body stripping remains opt-in.
+- Options page: include bodies, max body size, header redaction, URL-token
+  redaction, body stripping, filename pattern.
+- Non-blocking notice when DevTools/another debugger is already attached to the
+  tab (capture proceeds; modern Chromium allows multiple CDP clients).
 - Live popup status: elapsed time, request count, target page, error surfacing,
   and an "Export anyway" path when the debugger is detached mid-capture.
 - MV3 resilience: incremental state persistence to `chrome.storage.session` and a
