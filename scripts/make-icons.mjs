@@ -1,130 +1,81 @@
 /**
- * make-icons.mjs — generate SnapHAR's placeholder PNG icons.
+ * make-icons.mjs — rasterize icons/icon.svg into the PNG sizes the extension
+ * needs (16/32/48/128).
  *
- * Draws a brand-blue rounded square with a white lightning bolt (the "snap").
- * Pure Node + zlib, no native deps, so it runs anywhere. Re-run after tweaking
- * colors/shape: `node scripts/make-icons.mjs`.
+ * The SVG is the single source of truth. We render each size at native
+ * resolution with a headless Chromium browser (Chrome or Edge — both ship a
+ * stable `--screenshot` mode), so there are no native image dependencies. Set
+ * CHROME_BIN to point at a specific browser binary if auto-detection fails.
+ *
+ *   node scripts/make-icons.mjs
  */
-import { deflateSync } from 'node:zlib';
-import { writeFileSync, mkdirSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { readFileSync, writeFileSync, mkdtempSync, rmSync, existsSync, statSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir, platform } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
-const OUT_DIR = fileURLToPath(new URL('../icons/', import.meta.url));
+const ICONS_DIR = fileURLToPath(new URL('../icons/', import.meta.url));
+const SVG_PATH = join(ICONS_DIR, 'icon.svg');
 const SIZES = [16, 32, 48, 128];
 
-const BG = [15, 108, 189, 255];     // #0f6cbd
-const BG2 = [10, 80, 150, 255];     // subtle vertical gradient bottom
-const BOLT = [255, 255, 255, 255];
-
-// Lightning bolt polygon in a 0..1 unit square.
-const BOLT_POLY = [
-  [0.56, 0.08], [0.30, 0.55], [0.46, 0.55], [0.40, 0.92],
-  [0.72, 0.40], [0.54, 0.40], [0.62, 0.08],
-];
-
-function pointInPolygon(x, y, poly) {
-  let inside = false;
-  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-    const [xi, yi] = poly[i];
-    const [xj, yj] = poly[j];
-    const intersect = yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi;
-    if (intersect) inside = !inside;
+function findBrowser() {
+  if (process.env.CHROME_BIN && existsSync(process.env.CHROME_BIN)) return process.env.CHROME_BIN;
+  const candidates = {
+    darwin: [
+      '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+      '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
+      '/Applications/Chromium.app/Contents/MacOS/Chromium',
+    ],
+    win32: [
+      'C:/Program Files/Google/Chrome/Application/chrome.exe',
+      'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
+    ],
+    linux: [
+      '/usr/bin/google-chrome',
+      '/usr/bin/chromium',
+      '/usr/bin/chromium-browser',
+      '/usr/bin/microsoft-edge',
+    ],
+  }[platform()] || [];
+  const found = candidates.find((p) => existsSync(p));
+  if (!found) {
+    throw new Error('No Chromium browser found. Set CHROME_BIN to a Chrome/Edge binary.');
   }
-  return inside;
+  return found;
 }
 
-function lerp(a, b, t) {
-  return a.map((v, i) => Math.round(v + (b[i] - v) * t));
+function renderSize(browser, svg, size, outPath, workDir) {
+  const html = `<!doctype html><html><head><meta charset="utf-8"><style>
+    html,body{margin:0;padding:0;background:transparent}
+    svg{display:block;width:${size}px;height:${size}px}
+  </style></head><body>${svg}</body></html>`;
+  const htmlPath = join(workDir, `render-${size}.html`);
+  writeFileSync(htmlPath, html);
+
+  execFileSync(browser, [
+    '--headless',
+    '--disable-gpu',
+    '--hide-scrollbars',
+    '--force-device-scale-factor=1',
+    `--window-size=${size},${size}`,
+    '--default-background-color=00000000', // transparent
+    `--screenshot=${outPath}`,
+    htmlPath,
+  ], { stdio: 'ignore' });
 }
 
-function renderRGBA(size) {
-  const data = Buffer.alloc(size * size * 4);
-  const radius = size * 0.22;
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      const i = (y * size + x) * 4;
-      const inCorner = roundedRectAlpha(x + 0.5, y + 0.5, size, radius);
-      if (inCorner === 0) {
-        data[i + 3] = 0; // transparent outside the rounded square
-        continue;
-      }
-      const u = x / (size - 1);
-      const v = y / (size - 1);
-      let px = pointInPolygon(u, v, BOLT_POLY) ? BOLT : lerp(BG, BG2, v);
-      data[i] = px[0];
-      data[i + 1] = px[1];
-      data[i + 2] = px[2];
-      data[i + 3] = Math.round(px[3] * inCorner);
-    }
+const browser = findBrowser();
+const svg = readFileSync(SVG_PATH, 'utf8');
+const workDir = mkdtempSync(join(tmpdir(), 'snaphar-icons-'));
+try {
+  for (const size of SIZES) {
+    const outPath = join(ICONS_DIR, `icon${size}.png`);
+    renderSize(browser, svg, size, outPath, workDir);
+    if (!existsSync(outPath)) throw new Error(`render failed for ${size}px`);
+    console.log(`wrote icons/icon${size}.png (${statSync(outPath).size} bytes)`);
   }
-  return data;
-}
-
-// Returns coverage 0..1 for a rounded-rect mask (simple inside/outside, AA-ish).
-function roundedRectAlpha(x, y, size, r) {
-  const min = r;
-  const max = size - r;
-  let dx = 0;
-  let dy = 0;
-  if (x < min) dx = min - x;
-  else if (x > max) dx = x - max;
-  if (y < min) dy = min - y;
-  else if (y > max) dy = y - max;
-  const dist = Math.sqrt(dx * dx + dy * dy);
-  if (dist <= r - 1) return 1;
-  if (dist >= r) return 0;
-  return r - dist; // 1px feather
-}
-
-function pngEncode(size, rgba) {
-  const raw = Buffer.alloc(size * (size * 4 + 1));
-  for (let y = 0; y < size; y++) {
-    raw[y * (size * 4 + 1)] = 0; // filter: none
-    rgba.copy(raw, y * (size * 4 + 1) + 1, y * size * 4, (y + 1) * size * 4);
-  }
-  const idat = deflateSync(raw, { level: 9 });
-
-  const chunk = (type, body) => {
-    const len = Buffer.alloc(4);
-    len.writeUInt32BE(body.length, 0);
-    const typeBuf = Buffer.from(type, 'latin1');
-    const crc = Buffer.alloc(4);
-    crc.writeUInt32BE(crc32(Buffer.concat([typeBuf, body])) >>> 0, 0);
-    return Buffer.concat([len, typeBuf, body, crc]);
-  };
-
-  const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(size, 0);
-  ihdr.writeUInt32BE(size, 4);
-  ihdr[8] = 8;  // bit depth
-  ihdr[9] = 6;  // color type RGBA
-  return Buffer.concat([
-    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
-    chunk('IHDR', ihdr),
-    chunk('IDAT', idat),
-    chunk('IEND', Buffer.alloc(0)),
-  ]);
-}
-
-const CRC_TABLE = (() => {
-  const t = new Uint32Array(256);
-  for (let n = 0; n < 256; n++) {
-    let c = n;
-    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-    t[n] = c >>> 0;
-  }
-  return t;
-})();
-
-function crc32(buf) {
-  let c = 0xffffffff;
-  for (let i = 0; i < buf.length; i++) c = CRC_TABLE[(c ^ buf[i]) & 0xff] ^ (c >>> 8);
-  return c ^ 0xffffffff;
-}
-
-mkdirSync(OUT_DIR, { recursive: true });
-for (const size of SIZES) {
-  const png = pngEncode(size, renderRGBA(size));
-  writeFileSync(new URL(`icon${size}.png`, `file://${OUT_DIR}`), png);
-  console.log(`wrote icons/icon${size}.png (${png.length} bytes)`);
+  console.log(`Rendered with: ${browser}`);
+} finally {
+  rmSync(workDir, { recursive: true, force: true });
 }

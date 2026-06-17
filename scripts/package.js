@@ -107,7 +107,7 @@ const files = INCLUDE.flatMap((entry) => {
   } catch {
     return []; // optional file (e.g. PRIVACY.md) not present yet
   }
-});
+}).filter((f) => !f.endsWith('.svg')); // ship rasterized PNGs only; SVG is source
 
 mkdirSync(join(ROOT, 'dist'), { recursive: true });
 const outName = `snaphar-${pkg.version}.zip`;

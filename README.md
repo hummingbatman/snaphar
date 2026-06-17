@@ -38,13 +38,17 @@ popup.js ──messages──▶ background.js (service worker)
 ## Install (load unpacked)
 
 1. Run `npm install` is **not required** — there are no runtime dependencies.
-2. Generate icons if needed: `node scripts/make-icons.mjs`.
-3. Open `edge://extensions` (or `chrome://extensions`).
-4. Enable **Developer mode**.
-5. Click **Load unpacked** and select this project folder.
-6. Pin SnapHAR and click it to open the popup.
+   The PNG icons are committed, so no build step is needed to load the extension.
+2. Open `edge://extensions` (or `chrome://extensions`).
+3. Enable **Developer mode**.
+4. Click **Load unpacked** and select this project folder.
+5. Pin SnapHAR and click it to open the popup.
 
 To produce a store-ready zip: `npm run package` → `dist/snaphar-<version>.zip`.
+
+The icons are designed in [`icons/icon.svg`](./icons/icon.svg) (the single source of
+truth). Regenerate the PNGs after editing it with `npm run icons`, which rasterizes
+each size via a headless Chrome/Edge (set `CHROME_BIN` if auto-detection fails).
 
 ## Settings
 
