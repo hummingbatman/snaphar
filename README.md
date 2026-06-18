@@ -37,18 +37,15 @@ popup.js ──messages──▶ background.js (service worker)
 
 ## Install (load unpacked)
 
-1. Run `npm install` is **not required** — there are no runtime dependencies.
-   The PNG icons are committed, so no build step is needed to load the extension.
-2. Open `edge://extensions` (or `chrome://extensions`).
-3. Enable **Developer mode**.
-4. Click **Load unpacked** and select this project folder.
-5. Pin SnapHAR and click it to open the popup.
+No build or `npm install` needed — there are no runtime dependencies and the
+icons are committed.
+
+1. Open `edge://extensions` (or `chrome://extensions`).
+2. Enable **Developer mode**.
+3. Click **Load unpacked** and select this project folder.
+4. Pin SnapHAR and click it to open the popup.
 
 To produce a store-ready zip: `npm run package` → `dist/snaphar-<version>.zip`.
-
-The icons are designed in [`icons/icon.svg`](./icons/icon.svg) (the single source of
-truth). Regenerate the PNGs after editing it with `npm run icons`, which rasterizes
-each size via a headless Chrome/Edge (set `CHROME_BIN` if auto-detection fails).
 
 ## Settings
 
@@ -92,13 +89,16 @@ contain secrets — strip or cap them before sharing.
 ```bash
 npm test        # node:test unit tests over har.js / cdp-collector.js / download.js
 npm run lint    # syntax-check all source modules
+npm run icons   # regenerate PNGs from icons/icon.svg (set CHROME_BIN if needed)
 npm run package # build dist/snaphar-<version>.zip
 ```
 
 The correctness-critical CDP→HAR mapping lives in [`src/har.js`](./src/har.js) and
 is covered by [`test/har.test.js`](./test/har.test.js) using a recorded CDP event
 fixture. `har.js`, `cdp-collector.js`, and `download.js` are pure (no `chrome.*`)
-so they run under plain Node.
+so they run under plain Node. Icons are designed in
+[`icons/icon.svg`](./icons/icon.svg) — the single source of truth; `npm run icons`
+rasterizes each size via headless Chrome/Edge.
 
 ## License
 
