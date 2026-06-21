@@ -4,6 +4,8 @@
 network traffic and export a spec-compliant **HAR 1.2** file — without ever
 opening DevTools.
 
+> 📦 **[Install from the Chrome Web Store →](https://chromewebstore.google.com/detail/snaphar/aabmelinahckmnlipcglmikbaelmcanf)**
+
 Open the popup → **Start Recording** → reproduce the issue → **Stop & Export**.
 You get a `.har` you can re-import into the DevTools Network tab, attach to a bug,
 or feed to the [Google HAR Analyzer](https://toolbox.googleapps.com/apps/har_analyzer/).
@@ -35,7 +37,13 @@ popup.js ──messages──▶ background.js (service worker)
                   chrome.downloads.download  (data: URL, or offscreen Blob)
 ```
 
-## Install (load unpacked)
+## Install
+
+**[Get SnapHAR on the Chrome Web Store](https://chromewebstore.google.com/detail/snaphar/aabmelinahckmnlipcglmikbaelmcanf)** —
+the easiest way to install. Works in Chrome, Edge, and Brave (Edge users can add
+it from the Chrome Web Store).
+
+### From source (load unpacked)
 
 No build or `npm install` needed — there are no runtime dependencies and the
 icons are committed.
