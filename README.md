@@ -6,6 +6,10 @@ opening DevTools.
 
 > 📦 **[Install from the Chrome Web Store →](https://chromewebstore.google.com/detail/snaphar/aabmelinahckmnlipcglmikbaelmcanf)**
 
+<p align="center">
+  <img src="docs/demo.gif" alt="SnapHAR popup: open → record → stop & export a .har" width="420" />
+</p>
+
 Open the popup → **Start Recording** → reproduce the issue → **Stop & Export**.
 You get a `.har` you can re-import into the DevTools Network tab, attach to a bug,
 or feed to the [Google HAR Analyzer](https://toolbox.googleapps.com/apps/har_analyzer/).
