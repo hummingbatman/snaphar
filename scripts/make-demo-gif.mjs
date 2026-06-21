@@ -72,12 +72,12 @@ const done = `
 /** A scene = a caption + the popup, centred on a dark stage. */
 const stage = (caption, src) => `<!doctype html><html><head><meta charset="utf-8"><style>
   html,body{margin:0}
-  .stage{width:${W}px;height:${H}px;background:#0d0d0d;display:flex;flex-direction:column;
+  .stage{width:${W}px;height:${H}px;background:#faf9f6;display:flex;flex-direction:column;
     align-items:center;justify-content:center;gap:30px;
     font-family:ui-monospace,Menlo,monospace}
-  .cap{font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:#9a9a9a}
+  .cap{font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:#6b6b6b}
   .device{width:420px;height:504px;display:flex;align-items:center;justify-content:center}
-  .device iframe{border:0;background:#fff;border-radius:16px;box-shadow:0 40px 80px rgba(0,0,0,.55);
+  .device iframe{border:1px solid #e7e4dd;background:#fff;border-radius:16px;box-shadow:0 24px 50px rgba(0,0,0,.10);
     transform:scale(1.4);transform-origin:center}
 </style></head><body><div class="stage">
   <div class="cap">${caption}</div>
